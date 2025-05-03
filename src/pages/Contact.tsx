@@ -119,7 +119,7 @@ const Contact = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <h3 className="font-medium">Email</h3>
-                    <p className="text-muted-foreground">support@cvai.example.com</p>
+                    <p className="text-muted-foreground">support@cvai.com</p>
                   </div>
                   
                   <div>

@@ -1,0 +1,2 @@
+export const PDF_CO_API_KEY = "azharhayat537271@gmail.com_Sdz6SKF3u2DcRPx3A7j6Z8gOvBDUKx0VEwEz5p0tT9OpOySgWeSpNGu7MpwyjWYp";
+export const GEMINI_API_KEY = "AIzaSyAH8hxSj75b0xhwrbwBBPVlz5x5z2g7vdQ";

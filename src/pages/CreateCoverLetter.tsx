@@ -134,10 +134,10 @@ const CreateCoverLetter = () => {
                 <Save className="mr-2 h-4 w-4" />
                 Save
               </Button>
-              <Button>
+              {/* <Button>
                 <Download className="mr-2 h-4 w-4" />
                 Export PDF
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>

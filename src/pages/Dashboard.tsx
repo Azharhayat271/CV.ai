@@ -211,8 +211,8 @@ const Dashboard = () => {
                           </p>
                         </CardContent>
                         <CardFooter className="flex justify-between">
-                          <Button variant="outline" size="sm">View</Button>
-                          <Button variant="outline" size="sm">Edit</Button>
+                          {/* <Button variant="outline" size="sm">View</Button>
+                          <Button variant="outline" size="sm">Edit</Button> */}
                         </CardFooter>
                       </Card>
                     ))}
@@ -253,8 +253,8 @@ const Dashboard = () => {
                           </p>
                         </CardContent>
                         <CardFooter className="flex justify-between">
-                          <Button variant="outline" size="sm">View</Button>
-                          <Button variant="outline" size="sm">Edit</Button>
+                          {/* <Button variant="outline" size="sm">View</Button>
+                          <Button variant="outline" size="sm">Edit</Button> */}
                         </CardFooter>
                       </Card>
                     ))}

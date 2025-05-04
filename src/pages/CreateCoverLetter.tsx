@@ -1,6 +1,7 @@
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,14 +10,14 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save, Download, Wand2 } from "lucide-react";
 import { generateId, saveCoverLetter, getCVs, getCurrentTimestamp } from "@/lib/storage";
 import { toast } from "@/components/ui/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CreateCoverLetter = () => {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  const coverLetterRef = useRef<HTMLDivElement>(null);
   const [coverLetter, setCoverLetter] = useState({
     id: generateId(),
-    userId: "user-" + generateId(), // This would normally come from authentication
+    userId: "user-" + generateId(),
     cvId: "",
     name: "My Cover Letter",
     jobTitle: "",
@@ -27,7 +28,6 @@ const CreateCoverLetter = () => {
     updatedAt: "",
   });
 
-  // Get available CVs
   const cvs = getCVs();
   
   const handleGenerateCoverLetter = () => {
@@ -42,7 +42,6 @@ const CreateCoverLetter = () => {
     
     setIsGenerating(true);
     
-    // Simulate AI generation with a timeout
     setTimeout(() => {
       const generatedContent = 
         `Dear Hiring Manager,\n\n` +
@@ -55,13 +54,8 @@ const CreateCoverLetter = () => {
         `Sincerely,\n` +
         `[Your Name]`;
       
-      setCoverLetter(prev => ({
-        ...prev,
-        content: generatedContent
-      }));
-      
+      setCoverLetter(prev => ({ ...prev, content: generatedContent }));
       setIsGenerating(false);
-      
       toast({
         title: "Cover Letter Generated",
         description: "Your cover letter has been generated. Feel free to edit it to better match your experience.",
@@ -80,13 +74,11 @@ const CreateCoverLetter = () => {
     }
     
     const timestamp = getCurrentTimestamp();
-    const completeCoverLetter = {
+    saveCoverLetter({
       ...coverLetter,
       createdAt: timestamp,
       updatedAt: timestamp,
-    };
-    
-    saveCoverLetter(completeCoverLetter);
+    });
     
     toast({
       title: "Cover Letter Saved",
@@ -96,9 +88,64 @@ const CreateCoverLetter = () => {
     navigate("/dashboard");
   };
 
+  const handleExportPDF = async () => {
+    if (!coverLetterRef.current || !coverLetter.content) {
+      toast({
+        title: "Error",
+        description: "No content to export",
+        variant: "destructive",
+      });
+      return;
+    }
+  
+    try {
+      // Add temporary styling for PDF export
+      coverLetterRef.current.classList.add('pdf-export-active');
+      
+      const canvas = await html2canvas(coverLetterRef.current, {
+        scale: 1, // Reduced from 2 to 1 for smaller file size
+        logging: false,
+        useCORS: true,
+        windowWidth: 800, // Control the rendering width
+      });
+  
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 180; // Reduced from 190 to fit better
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Check if content fits on one page
+      if (imgHeight > 250) { // A4 height is 297mm, leaving space for margins
+        // If too tall, reduce width to make content fit
+        const adjustedWidth = 160;
+        const adjustedHeight = (canvas.height * adjustedWidth) / canvas.width;
+        pdf.addImage(imgData, "PNG", 15, 10, adjustedWidth, adjustedHeight);
+      } else {
+        pdf.addImage(imgData, "PNG", 15, 10, imgWidth, imgHeight);
+      }
+  
+      pdf.save(`${coverLetter.name || "CoverLetter"}_${coverLetter.companyName || ""}.pdf`);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Your cover letter has been exported as PDF.",
+      });
+      
+      // Remove temporary styling
+      coverLetterRef.current.classList.remove('pdf-export-active');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+      console.error("PDF generation error:", error);
+      coverLetterRef.current?.classList.remove('pdf-export-active');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
       <div className="border-b">
         <div className="container mx-auto py-4 px-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -134,16 +181,15 @@ const CreateCoverLetter = () => {
                 <Save className="mr-2 h-4 w-4" />
                 Save
               </Button>
-              {/* <Button>
+              <Button onClick={handleExportPDF} disabled={!coverLetter.content}>
                 <Download className="mr-2 h-4 w-4" />
                 Export PDF
-              </Button> */}
+              </Button>
             </div>
           </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
-          {/* Form Section */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -151,7 +197,7 @@ const CreateCoverLetter = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cover-letter-name">Cover Letter Name (for your reference)</Label>
+                  <Label htmlFor="cover-letter-name">Cover Letter Name</Label>
                   <Input 
                     id="cover-letter-name" 
                     value={coverLetter.name}
@@ -177,32 +223,6 @@ const CreateCoverLetter = () => {
                     onChange={(e) => setCoverLetter(prev => ({ ...prev, companyName: e.target.value }))}
                     placeholder="Company Inc."
                   />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="cv">Select your CV (optional)</Label>
-                  <Select 
-                    value={coverLetter.cvId} 
-                    onValueChange={(value) => setCoverLetter(prev => ({ ...prev, cvId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a CV" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cvs.length === 0 ? (
-                        <SelectItem value="none" disabled>No CVs available</SelectItem>
-                      ) : (
-                        cvs.map(cv => (
-                          <SelectItem key={cv.id} value={cv.id}>
-                            {cv.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Selecting a CV will help generate a more personalized cover letter.
-                  </p>
                 </div>
                 
                 <div className="space-y-2">
@@ -241,41 +261,37 @@ const CreateCoverLetter = () => {
                     placeholder="Your cover letter content will appear here..."
                     rows={15}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Edit the generated cover letter to personalize it further.
-                  </p>
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          {/* Preview Section */}
           <div className="bg-muted p-6 rounded-lg">
             <h3 className="text-lg font-semibold mb-4">Cover Letter Preview</h3>
             <p className="text-muted-foreground text-sm mb-6">
-              This is a simplified preview of your cover letter. The final version will include proper formatting.
+              This preview will be exported as PDF.
             </p>
             
-            <div className="bg-card border rounded-md p-6">
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p>Date: {new Date().toLocaleDateString()}</p>
-                </div>
-                
-                <div>
-                  <p>Hiring Manager</p>
-                  <p>{coverLetter.companyName || "[Company Name]"}</p>
-                </div>
-                
-                <div>
-                  <p>Subject: Application for {coverLetter.jobTitle || "[Position]"} Position</p>
-                </div>
-                
-                <div className="whitespace-pre-wrap">
-                  {coverLetter.content || "Your cover letter content will appear here after generation."}
-                </div>
-              </div>
-            </div>
+            <div ref={coverLetterRef} className="bg-white p-8 rounded-md pdf-export">
+  <div className="space-y-4 text-sm"> {/* Reduced spacing and smaller font */}
+    <div>
+      <p>Date: {new Date().toLocaleDateString()}</p>
+    </div>
+    
+    <div>
+      <p>Hiring Manager</p>
+      <p>{coverLetter.companyName || "[Company Name]"}</p>
+    </div>
+    
+    <div>
+      <p>Subject: Application for {coverLetter.jobTitle || "[Position]"} Position</p>
+    </div>
+    
+    <div className="whitespace-pre-wrap text-xs"> {/* Smaller font for content */}
+      {coverLetter.content || "Your cover letter content will appear here after generation."}
+    </div>
+  </div>
+</div>
           </div>
         </div>
       </div>

@@ -130,3 +130,23 @@
     opacity: 0.2;
   }
 }
+
+.pdf-export {
+  width: 210mm; /* A4 width */
+  min-height: 297mm; /* A4 height */
+  font-family: Arial, sans-serif;
+}
+
+.pdf-export-active {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+
+.pdf-export-active p {
+  margin-bottom: 0.5rem !important;
+}
+
+.pdf-export-active .whitespace-pre-wrap {
+  white-space: pre-wrap;
+  font-size: 11px !important;
+}
